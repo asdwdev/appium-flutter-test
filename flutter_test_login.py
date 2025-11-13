@@ -74,21 +74,65 @@ try:
     # --- CEK DASHBOARD ---
     print("⏳ Menunggu halaman dashboard muncul...")
     dashboard = WebDriverWait(driver, 30).until(
-        EC.presence_of_element_located(
+        EC.element_to_be_clickable(
             (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("bottom_nav_dashboard")')
         )
     )
 
     if dashboard.is_displayed():
         print("🎉 Login sukses! Tombol Dashboard muncul di layar.")
-        print("🖱️ Klik tombol Dashboard...")
+        time.sleep(2)
         dashboard.click()
-        print("✅ Tombol Dashboard berhasil diklik!")
+        print("✅ Berhasil klik Dashboard.")
     else:
         print("⚠️ Dashboard ditemukan tapi tidak tampil di layar.")
 
+    # --- NAVIGASI KE PROFILE ---
+    print("⏳ Menunggu tombol Profile muncul...")
+    profile_button = WebDriverWait(driver, 30).until(
+        EC.element_to_be_clickable(
+            (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("bottom_nav_profile")')
+        )
+    )
+    time.sleep(2)
+    profile_button.click()
+    print("✅ Berhasil klik tombol Profile.")
+
+    # --- NAVIGASI KE SETTINGS ---
+    print("⏳ Menunggu tombol Settings muncul...")
+    settings_button = WebDriverWait(driver, 30).until(
+        EC.element_to_be_clickable(
+            (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("bottom_nav_settings")')
+        )
+    )
+    time.sleep(2)
+    settings_button.click()
+    print("✅ Berhasil klik tombol Settings.")
+
+    # --- NAVIGASI KE HOME ---
+    print("⏳ Menunggu tombol Home muncul...")
+    home_button = WebDriverWait(driver, 30).until(
+        EC.element_to_be_clickable(
+            (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("bottom_nav_home")')
+        )
+    )
+    time.sleep(2)
+    home_button.click()
+    print("✅ Berhasil klik tombol Home. Halaman Home terbuka.")
+
+    # --- KLIK LOGOUT ---
+    print("⏳ Menunggu tombol Logout muncul di halaman Home...")
+    logout_button = WebDriverWait(driver, 30).until(
+        EC.element_to_be_clickable(
+            (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().description("Logout")')
+        )
+    )
+    time.sleep(2)
+    logout_button.click()
+    print("🚪 Tombol Logout berhasil diklik! Pengguna keluar dari aplikasi.")
+
 except Exception as e:
-    print("❌ Terjadi kesalahan selama login atau klik dashboard:", e)
+    print("❌ Terjadi kesalahan selama eksekusi:", e)
     try:
         print("\n===== 🧩 PAGE SOURCE SAAT ERROR =====\n")
         print(driver.page_source[:2000])
