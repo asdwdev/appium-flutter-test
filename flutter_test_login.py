@@ -4,6 +4,54 @@ from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import mysql.connector
+from datetime import datetime
+
+# ============================
+# 🔧 KONFIGURASI DATABASE
+# ============================
+DB_CONFIG = {
+    "host": "localhost",
+    "user": "root",            # ubah sesuai user MySQL kamu
+    "password": "",            # isi password MySQL kamu
+    "database": "automation_db"  # pastikan DB ini sudah dibuat
+}
+
+# Buat tabel kalau belum ada
+def setup_database():
+    conn = mysql.connector.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS test_results (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            test_time DATETIME,
+            status VARCHAR(20),
+            error_message TEXT,
+            duration FLOAT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# Simpan hasil test
+def save_test_result(status, error_message, duration):
+    conn = mysql.connector.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    query = "INSERT INTO test_results (test_time, status, error_message, duration) VALUES (%s, %s, %s, %s)"
+    values = (datetime.now(), status, error_message, duration)
+    cursor.execute(query, values)
+    conn.commit()
+    conn.close()
+    print(f"💾 Hasil test disimpan ke MySQL (status: {status})")
+
+
+# ============================
+# 🚀 MULAI TEST APPIUM
+# ============================
+setup_database()
+start_time = time.time()
+status = "SUCCESS"
+error_message = None
 
 print("🚀 Memulai sesi Appium Flutter (pakai UiAutomator2)...")
 
@@ -22,15 +70,15 @@ options.set_capability("newCommandTimeout", 300)
 driver = webdriver.Remote("http://127.0.0.1:4723", options=options)
 print("✅ Appium berhasil terhubung ke aplikasi!")
 
-time.sleep(5)  # tunggu app boot
+time.sleep(5)
 
 try:
     print("📱 Contexts:", driver.contexts)
     driver.switch_to.context("NATIVE_APP")
     print("🔁 Berhasil switch ke NATIVE_APP context")
 
-    # --- TUNGGU HALAMAN LOGIN ---
-    print("⏳ Menunggu halaman login muncul (max 60 detik)...")
+    # --- LOGIN FLOW ---
+    print("⏳ Menunggu halaman login...")
     found = False
     for i in range(60):
         src = driver.page_source
@@ -39,12 +87,9 @@ try:
             print(f"✅ Elemen email ditemukan di detik ke-{i}")
             break
         time.sleep(1)
-
     if not found:
-        raise Exception("Elemen login_email_input tidak muncul di page source dalam 60 detik.")
+        raise Exception("Elemen login_email_input tidak muncul dalam 60 detik.")
 
-    # --- LOGIN FLOW ---
-    print("🔍 Cari field email...")
     email_field = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located(
             (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("login_email_input")')
@@ -52,9 +97,7 @@ try:
     )
     email_field.click()
     email_field.send_keys("user@test.com")
-    print("✅ Email diisi.")
 
-    print("🔍 Cari field password...")
     password_field = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located(
             (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("login_password_input")')
@@ -62,84 +105,73 @@ try:
     )
     password_field.click()
     password_field.send_keys("user123")
-    print("✅ Password diisi.")
 
-    print("🔍 Klik tombol Login...")
     login_button = WebDriverWait(driver, 20).until(
         EC.element_to_be_clickable((AppiumBy.ACCESSIBILITY_ID, "Login"))
     )
     login_button.click()
-    print("🚀 Tombol login diklik!")
+    print("🚀 Login berhasil diklik!")
 
-    # --- CEK DASHBOARD ---
-    print("⏳ Menunggu halaman dashboard muncul...")
+    # --- DASHBOARD ---
     dashboard = WebDriverWait(driver, 30).until(
         EC.element_to_be_clickable(
             (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("bottom_nav_dashboard")')
         )
     )
+    dashboard.click()
+    print("✅ Klik Dashboard.")
 
-    if dashboard.is_displayed():
-        print("🎉 Login sukses! Tombol Dashboard muncul di layar.")
-        time.sleep(2)
-        dashboard.click()
-        print("✅ Berhasil klik Dashboard.")
-    else:
-        print("⚠️ Dashboard ditemukan tapi tidak tampil di layar.")
-
-    # --- NAVIGASI KE PROFILE ---
-    print("⏳ Menunggu tombol Profile muncul...")
+    # --- PROFILE ---
     profile_button = WebDriverWait(driver, 30).until(
         EC.element_to_be_clickable(
             (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("bottom_nav_profile")')
         )
     )
-    time.sleep(2)
+    time.sleep(1)
     profile_button.click()
-    print("✅ Berhasil klik tombol Profile.")
+    print("✅ Klik Profile.")
 
-    # --- NAVIGASI KE SETTINGS ---
-    print("⏳ Menunggu tombol Settings muncul...")
+    # --- SETTINGS ---
     settings_button = WebDriverWait(driver, 30).until(
         EC.element_to_be_clickable(
             (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("bottom_nav_settings")')
         )
     )
-    time.sleep(2)
+    time.sleep(1)
     settings_button.click()
-    print("✅ Berhasil klik tombol Settings.")
+    print("✅ Klik Settings.")
 
-    # --- NAVIGASI KE HOME ---
-    print("⏳ Menunggu tombol Home muncul...")
+    # --- HOME ---
     home_button = WebDriverWait(driver, 30).until(
         EC.element_to_be_clickable(
             (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().resourceId("bottom_nav_home")')
         )
     )
-    time.sleep(2)
+    time.sleep(1)
     home_button.click()
-    print("✅ Berhasil klik tombol Home. Halaman Home terbuka.")
+    print("✅ Kembali ke Home.")
 
-    # --- KLIK LOGOUT ---
-    print("⏳ Menunggu tombol Logout muncul di halaman Home...")
+    # --- LOGOUT ---
     logout_button = WebDriverWait(driver, 30).until(
         EC.element_to_be_clickable(
             (AppiumBy.ANDROID_UIAUTOMATOR, 'new UiSelector().description("Logout")')
         )
     )
-    time.sleep(2)
+    time.sleep(1)
     logout_button.click()
-    print("🚪 Tombol Logout berhasil diklik! Pengguna keluar dari aplikasi.")
+    print("🚪 Logout berhasil dilakukan!")
 
 except Exception as e:
-    print("❌ Terjadi kesalahan selama eksekusi:", e)
+    status = "FAILED"
+    error_message = str(e)
+    print("❌ Terjadi kesalahan:", e)
     try:
-        print("\n===== 🧩 PAGE SOURCE SAAT ERROR =====\n")
         print(driver.page_source[:2000])
-        print("\n=====================================\n")
     except Exception:
-        print("(Gagal ambil page source untuk debug)")
+        print("(Gagal ambil page source)")
 
 finally:
     driver.quit()
-    print("🧹 Sesi Appium ditutup.")
+    duration = round(time.time() - start_time, 2)
+    print(f"🧹 Sesi Appium ditutup. Durasi: {duration} detik")
+    save_test_result(status, error_message, duration)
